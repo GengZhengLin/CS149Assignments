@@ -75,15 +75,11 @@ public class ChatServer {
     public void runForever() throws IOException {
         @SuppressWarnings("resource")
 		final ServerSocket server = new ServerSocket(port);
-        for (int i = 0; i < serverThreads.length; i++){
-        	serverThreads[i] = new ServerThread();
-        }
         while (true) {
             final Socket connection = server.accept();
-            System.out.println("GetConnection!");
             for(int i = 0; i < serverThreads.length; i++){
-            	if (!serverThreads[i].isAlive()){
-            		System.out.println("i:"+i);
+            	if (serverThreads[i] == null || !serverThreads[i].isAlive()){
+            		serverThreads[i] = new ServerThread();
             		serverThreads[i].setConnection(connection);
             		serverThreads[i].start();
             		break;
