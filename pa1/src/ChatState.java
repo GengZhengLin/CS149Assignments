@@ -33,19 +33,20 @@ public class ChatState {
      * {@link #recentMessages(long)} so that they can return the newly posted
      * messages.
      */
-    public void addMessage(final String msg) {
+    public synchronized void addMessage(final String msg) {
         history.addLast(msg);
         ++lastID;
         if (history.size() > MAX_HISTORY) {
             history.removeFirst();
         }
+        notifyAll();
     }
 
     /**
      * A helper method which returns the number of outstanding
      * messages.
      */
-    private int messagesToSend(final long mostRecentSeenID) {
+    private synchronized int messagesToSend(final long mostRecentSeenID) {
         final long count = lastID - mostRecentSeenID;
         if (count < 0 || count > history.size()) {
             return history.size();
@@ -66,12 +67,13 @@ public class ChatState {
      * return the instant new messages are available, not continue to
      * wait even after messages have been posted.
      */
-    public String recentMessages(long mostRecentSeenID) {
+    public synchronized String recentMessages(long mostRecentSeenID) {
         int count = messagesToSend(mostRecentSeenID);
         if (count == 0) {
             // TODO: Do not use Thread.sleep() here!
             try {
-                Thread.sleep(15000);
+//                Thread.sleep(15000);
+            	wait(15000);
             } catch (final InterruptedException xx) {
                 throw new Error("unexpected", xx);
             }

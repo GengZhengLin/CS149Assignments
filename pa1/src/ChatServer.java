@@ -43,6 +43,25 @@ public class ChatServer {
     private final int port;
     private final Map<String,ChatState> stateByName
         = new HashMap<String,ChatState>();
+    
+    class ServerThread extends Thread {
+    	Socket connection;
+    	public void setConnection(final Socket connection){
+    		this.connection = connection;
+    	}
+    	
+    	public void run(){
+    		try{
+    			ChatServer.this.handle(connection);
+    		}
+    		catch(IOException e){
+    			System.err.println("Caught IOException: " + e.getMessage());
+    			System.exit(-1);
+    		}
+    	}
+    }
+    
+    private ServerThread[] serverThreads = new ServerThread[8];
 
     /**
      * Constructs a new {@link ChatServer} that will service requests
@@ -56,9 +75,21 @@ public class ChatServer {
     public void runForever() throws IOException {
         @SuppressWarnings("resource")
 		final ServerSocket server = new ServerSocket(port);
+        for (int i = 0; i < serverThreads.length; i++){
+        	serverThreads[i] = new ServerThread();
+        }
         while (true) {
             final Socket connection = server.accept();
-            handle(connection);
+            System.out.println("GetConnection!");
+            for(int i = 0; i < serverThreads.length; i++){
+            	if (!serverThreads[i].isAlive()){
+            		System.out.println("i:"+i);
+            		serverThreads[i].setConnection(connection);
+            		serverThreads[i].start();
+            		break;
+            	}
+            }
+            // handle(connection);
         }
     }
     
@@ -121,7 +152,7 @@ public class ChatServer {
         System.out.println(Thread.currentThread() + ": replied with " + data.length + " bytes");
     }
 
-    private ChatState getState(final String room) {
+    private synchronized ChatState getState(final String room) {
         ChatState state = stateByName.get(room);
         if (state == null) {
             state = new ChatState(room);
