@@ -43,6 +43,7 @@ public class ChatServer {
     private final int port;
     private final Map<String,ChatState> stateByName
         = new HashMap<String,ChatState>();
+    private ChatState chatStateAll;
     
     class ServerThread extends Thread {
     	Socket connection;
@@ -75,6 +76,8 @@ public class ChatServer {
      */
     public ChatServer(final int port) throws IOException {
         this.port = port;
+        chatStateAll = new ChatState("all");
+        stateByName.put("all", chatStateAll);
     }
 
     public void runForever() throws IOException {
@@ -135,7 +138,23 @@ public class ChatServer {
             } else if ((m = PUSH_REQUEST.matcher(request)).matches()) {
                 String room = replaceEmptyWithDefaultRoom(m.group(1));
                 final String msg = m.group(2);
-                getState(room).addMessage(msg);
+                if (room.equals("all")){
+                	for (ChatState value : stateByName.values()){
+                		synchronized(value){
+                			value.addMessage(msg);
+                		}
+                	}
+                }
+                else {
+                	ChatState chatRoom = getState(room);
+                	ChatState chatAll = getState("all");
+                	synchronized(chatAll){
+                		synchronized(chatRoom){
+                        	chatRoom.addMessage(msg);
+                        	chatAll.addMessage(msg);
+                		}
+                	}
+                }
                 sendResponse(xo, OK, TEXT, "ack");
             } else {
                 sendResponse(xo, NOT_FOUND, TEXT, "Malformed request.");

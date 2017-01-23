@@ -33,7 +33,7 @@ public class ChatState {
      * {@link #recentMessages(long)} so that they can return the newly posted
      * messages.
      */
-    public synchronized void addMessage(final String msg) {
+    public void addMessage(final String msg) {
         history.addLast(msg);
         ++lastID;
         if (history.size() > MAX_HISTORY) {
