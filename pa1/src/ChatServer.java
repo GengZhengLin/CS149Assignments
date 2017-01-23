@@ -57,6 +57,11 @@ public class ChatServer {
     		catch(IOException e){
     			System.err.println("Caught IOException: " + e.getMessage());
     			System.exit(-1);
+    		} 
+    		finally{
+    			synchronized(ChatServer.this){
+    				ChatServer.this.notify();
+    			}
     		}
     	}
     }
@@ -76,16 +81,29 @@ public class ChatServer {
         @SuppressWarnings("resource")
 		final ServerSocket server = new ServerSocket(port);
         while (true) {
-            final Socket connection = server.accept();
-            for(int i = 0; i < serverThreads.length; i++){
-            	if (serverThreads[i] == null || !serverThreads[i].isAlive()){
-            		serverThreads[i] = new ServerThread();
-            		serverThreads[i].setConnection(connection);
-            		serverThreads[i].start();
-            		break;
-            	}
-            }
-            // handle(connection);
+        	final Socket connection = server.accept();
+        	boolean getJobWorking = false;
+        	while (!getJobWorking){
+                for(int i = 0; i < serverThreads.length; i++){
+                	if (serverThreads[i] == null || !serverThreads[i].isAlive()){
+                		serverThreads[i] = new ServerThread();
+                		serverThreads[i].setConnection(connection);
+                		serverThreads[i].start();
+                		getJobWorking = true;
+                		break;
+                	}
+                }
+                if (!getJobWorking){
+                	try {
+                		synchronized(this){
+                			wait();
+                		}
+                	}
+                	catch(InterruptedException e) {
+                		e.printStackTrace();
+                	}
+                }
+        	}
         }
     }
     

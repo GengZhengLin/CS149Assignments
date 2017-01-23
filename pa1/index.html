@@ -45,10 +45,11 @@ function incoming() {
 }
 
 function addLine(str) {
-  if (lines.length == 12) {
-    lines.splice(0,1);
-    lines.push(unescape(str));
-  }
+  // if (lines.length == 12) {
+  //   lines.splice(0,1);
+  //   lines.push(unescape(str));
+  // }
+  lines.push(unescape(str));
   document.form.received.value = lines.join('\n');
 }
 
