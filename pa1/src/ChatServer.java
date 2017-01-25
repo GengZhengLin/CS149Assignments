@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -55,7 +56,7 @@ public class ChatServer {
     		try{
     			ChatServer.this.handle(connection);
     		}
-    		catch(IOException e){
+    		catch(Exception e){
     			System.err.println("Caught IOException: " + e.getMessage());
     			System.exit(-1);
     		} 
@@ -117,7 +118,7 @@ public class ChatServer {
     	return room;
     }
 
-    private void handle(final Socket connection) throws IOException {
+    private void handle(final Socket connection) throws IOException, InterruptedException {
         try {
             final BufferedReader xi
                 = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -139,7 +140,11 @@ public class ChatServer {
                 String room = replaceEmptyWithDefaultRoom(m.group(1));
                 final String msg = m.group(2);
                 if (room.equals("all")){
-                	for (ChatState value : stateByName.values()){
+                	Collection<ChatState> rooms = null;
+                	synchronized(stateByName){
+                		rooms = stateByName.values();
+                	}
+                	for (ChatState value : rooms){
                 		synchronized(value){
                 			value.addMessage(msg);
                 		}
@@ -148,14 +153,32 @@ public class ChatServer {
                 else {
                 	ChatState chatRoom = getState(room);
                 	ChatState chatAll = getState("all");
-                	synchronized(chatAll){
-                		synchronized(chatRoom){
-                        	chatRoom.addMessage(msg);
-                        	chatAll.addMessage(msg);
-                		}
-                	}
-                }
-                sendResponse(xo, OK, TEXT, "ack");
+                	Thread currentThread = Thread.currentThread();
+            		synchronized(chatRoom){
+                    	chatRoom.addMessage(msg);
+                    	chatRoom.addingMsgThreads.add(currentThread);
+            		}
+            		Thread allRoomThread = new Thread(new Runnable(){
+            			public void run(){
+        					try {
+                    			synchronized (chatRoom){
+                    				if (chatRoom.addingMsgThreads.peek() != currentThread){
+    									chatRoom.wait();
+                    				}
+                        			synchronized (chatAll) {              				
+                        				chatAll.addMessage(msg);
+            						}
+                    				chatRoom.addingMsgThreads.remove();
+                    				chatRoom.notifyAll();
+                    			}
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+            			}
+            		});
+            		allRoomThread.start();
+            		sendResponse(xo, OK, TEXT, "ack");
+                }                
             } else {
                 sendResponse(xo, NOT_FOUND, TEXT, "Malformed request.");
             }
@@ -185,13 +208,15 @@ public class ChatServer {
         System.out.println(Thread.currentThread() + ": replied with " + data.length + " bytes");
     }
 
-    private synchronized ChatState getState(final String room) {
-        ChatState state = stateByName.get(room);
-        if (state == null) {
-            state = new ChatState(room);
-            stateByName.put(room, state);
-        }
-        return state;
+    private ChatState getState(final String room) {
+    	synchronized(stateByName){
+            ChatState state = stateByName.get(room);
+            if (state == null) {
+                state = new ChatState(room);
+                stateByName.put(room, state);
+            }
+            return state;
+    	}       
     }
 
     /**

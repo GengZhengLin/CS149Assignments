@@ -1,6 +1,7 @@
 // ChatState
 
 import java.util.LinkedList;
+import java.util.Queue;
 
 public class ChatState {
     private static final int MAX_HISTORY = 32;
@@ -12,6 +13,7 @@ public class ChatState {
     public ChatState(final String name) {
         this.name = name;
         history.addLast("Hello " + name + "!");
+        addingMsgThreads = new LinkedList<Thread>();
     }
 
     /**
@@ -20,6 +22,7 @@ public class ChatState {
     public String getName() {
         return name;
     }
+    public Queue<Thread> addingMsgThreads;
 
     /**
      * This method adds a new message to the chat room history, and
