@@ -142,12 +142,12 @@ public class ChatServer {
                 if (room.equals("all")){
                 	Collection<ChatState> rooms = null;
                 	synchronized(stateByName){
-                		rooms = stateByName.values();
-                	}
-                	for (ChatState value : rooms){
-                		synchronized(value){
-                			value.addMessage(msg);
-                		}
+                		rooms = stateByName.values();               	
+	                	for (ChatState value : rooms){
+	                		synchronized(value){
+	                			value.addMessage(msg);
+	                		}
+	                	}
                 	}
                 }
                 else {
