@@ -1,0 +1,38 @@
+<mediawiki>
+  <page>
+    <title>A</title>
+    <revision>
+      <text>
+        Here are some links to [[B]] and [[C]].
+      </text>
+    </revision>
+  </page>
+
+  <page>
+    <title>B</title>
+    <revision>
+      <text>
+        We have a link to [[A]].
+      </text>
+    </revision>
+  </page>
+
+  <page>
+    <title>C</title>
+    <revision>
+      <text>
+        [[A]], [[D]]
+      </text>
+    </revision>
+  </page>
+
+  <page>
+    <title>D</title>
+    <revision>
+      <text>
+        [[A]], [[A]], [[A]], [[D|self-link]].
+      </text>
+    </revision>
+  </page>
+
+</mediawiki>
